@@ -75,22 +75,7 @@
         }
       });
 
-      document.getElementById('signup-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          await setDoc(doc(db, 'users', userCredential.user.uid), {
-            email: email,
-            role: 'user',
-            createdAt: new Date().toISOString()
-          });
-          window.location.href = '/index.html';
-        } catch (error) {
-          alert('Erreur d\'inscription: ' + error.message);
-        }
-      });
+      
     } catch (error) {
       alert('Erreur d\'initialisation Firebase: ' + error.message);
     }

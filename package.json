@@ -1,0 +1,11 @@
+{
+    "name": "ticketmaster",
+    "version": "1.0.0",
+    "description": "Ticket reservation web app",
+    "scripts": {
+        "start": "serve"
+    },
+    "dependencies": {
+        "serve": "^14.2.4"
+    }
+}

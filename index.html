@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicketMaster - Dashboard</title>
+  <link rel="icon" type="image/png" href="assets/tp.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <img src="assets/tp.png" alt="TicketMaster Logo" class="me-2" style="height: 40px;">
+        TicketMaster
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="logout">Déconnexion</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid mt-4">
+    <!-- Messages -->
+    <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
+    <div id="info-message" class="alert alert-info d-none" role="alert"></div>
+
+    <!-- User Section -->
+    <div id="user-section" class="section" style="display: none;">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h2 class="card-title text-primary">Bienvenue, Utilisateur</h2>
+          <div class="row">
+            <div class="col-lg-8">
+              <h3 class="mb-3">Événements Disponibles</h3>
+              <div class="input-group mb-3">
+                <input type="text" id="event-filter" class="form-control" placeholder="Filtrer par catégorie, date, lieu">
+                <button class="btn btn-primary" id="filter-btn">Filtrer</button>
+              </div>
+              <div id="event-list" class="row"></div>
+            </div>
+            <div class="col-lg-4">
+              <h3 class="mb-3">Mes Réservations</h3>
+              <div id="reservation-list"></div>
+              <h3 class="mt-4 mb-3">Compléter un Paiement</h3>
+              <div id="pending-payments"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Organizer Section -->
+    <div id="organizer-section" class="section" style="display: none;">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h2 class="card-title text-primary">Organisateur</h2>
+          <div class="row">
+            <div class="col-md-6">
+              <h3 class="mb-3">Créer un Événement</h3>
+              <form id="organizer-event-form" class="p-3 bg-white rounded shadow-sm">
+                <div class="mb-3">
+                  <label for="org-event-name" class="form-label">Nom</label>
+                  <input type="text" class="form-control" id="org-event-name" required>
+                </div>
+                <div class="mb-3">
+                  <label for="org-event-date" class="form-label">Date</label>
+                  <input type="datetime-local" class="form-control" id="org-event-date" required>
+                </div>
+                <div class="mb-3">
+                  <label for="org-event-location" class="form-label">Lieu</label>
+                  <input type="text" class="form-control" id="org-event-location" required>
+                </div>
+                <div class="mb-3">
+                  <label for="org-event-seats" class="form-label">Nombre de places</label>
+                  <input type="number" class="form-control" id="org-event-seats" required>
+                </div>
+                <div class="mb-3">
+                  <label for="org-event-price" class="form-label">Prix Standard</label>
+                  <input type="number" class="form-control" id="org-event-price" required>
+                </div>
+                <div class="mb-3">
+                  <label for="org-event-vip-price" class="form-label">Supplément VIP</label>
+                  <input type="number" class="form-control" id="org-event-vip-price" required>
+                </div>
+                <div class="mb-3">
+                  <label for="org-event-category" class="form-label">Catégorie</label>
+                  <select class="form-control" id="org-event-category" required></select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Créer</button>
+              </form>
+            </div>
+            <div class="col-md-6">
+              <h3 class="mb-3">Scanner QR Code</h3>
+              <div class="p-3 bg-white rounded shadow-sm">
+                <video id="qr-video" class="w-100 rounded" style="max-height: 300px;"></video>
+                <canvas id="qr-canvas" style="display: none;"></canvas>
+                <button class="btn btn-success mt-2 w-100" id="start-scan">Démarrer le Scan</button>
+                <div id="qr-result" class="mt-2 text-center"></div>
+              </div>
+            </div>
+          </div>
+          <h3 class="mt-4 mb-3">Réservations pour Validation</h3>
+          <div id="organizer-reservations"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Section -->
+    <div id="admin-section" class="section" style="display: none;">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h2 class="card-title text-primary">Administration</h2>
+          <div class="mb-3">
+            <button class="btn btn-warning me-2" id="init-categories">Initialiser les Catégories</button>
+            <button class="btn btn-danger" id="init-firestore">Initialiser Firestore</button>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <h3 class="mb-3">Créer un Utilisateur</h3>
+              <form id="create-user-form" class="p-3 bg-white rounded shadow-sm">
+                <div class="mb-3">
+                  <label for="user-email" class="form-label">E-mail</label>
+                  <input type="email" class="form-control" id="user-email" required>
+                </div>
+                <div class="mb-3">
+                  <label for="user-password" class="form-label">Mot de passe</label>
+                  <input type="password" class="form-control" id="user-password" required>
+                </div>
+                <div class="mb-3">
+                  <label for="user-role" class="form-label">Rôle</label>
+                  <select class="form-control" id="user-role" required>
+                    <option value="user">Utilisateur</option>
+                    <option value="organizer">Organisateur</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Créer</button>
+              </form>
+            </div>
+            <div class="col-md-6">
+              <h3 class="mb-3">Créer un Événement</h3>
+              <form id="event-form" class="p-3 bg-white rounded shadow-sm">
+                <div class="mb-3">
+                  <label for="event-name" class="form-label">Nom</label>
+                  <input type="text" class="form-control" id="event-name" required>
+                </div>
+                <div class="mb-3">
+                  <label for="event-date" class="form-label">Date</label>
+                  <input type="datetime-local" class="form-control" id="event-date" required>
+                </div>
+                <div class="mb-3">
+                  <label for="event-location" class="form-label">Lieu</label>
+                  <input type="text" class="form-control" id="event-location" required>
+                </div>
+                <div class="mb-3">
+                  <label for="event-seats" class="form-label">Nombre de places</label>
+                  <input type="number" class="form-control" id="event-seats" required>
+                </div>
+                <div class="mb-3">
+                  <label for="event-price" class="form-label">Prix Standard</label>
+                  <input type="number" class="form-control" id="event-price" required>
+                </div>
+                <div class="mb-3">
+                  <label for="event-vip-price" class="form-label">Supplément VIP</label>
+                  <input type="number" class="form-control" id="event-vip-price" required>
+                </div>
+                <div class="mb-3">
+                  <label for="event-category" class="form-label">Catégorie</label>
+                  <select class="form-control" id="event-category" required></select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Créer</button>
+              </form>
+            </div>
+            <div class="col-md-6">
+              <h3 class="mb-3">Gérer Utilisateurs</h3>
+              <div id="user-list" class="p-3 bg-white rounded shadow-sm"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal pour réservation -->
+    <div class="modal fade" id="reservationModal" tabindex="-1" aria-labelledby="reservationModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="reservationModalLabel">Réserver un Événement</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="reservation-form">
+              <input type="hidden" id="reservation-event-id">
+              <div class="mb-3">
+                <label for="number-of-seats" class="form-label">Nombre de places</label>
+                <input type="number" class="form-control" id="number-of-seats" min="1" value="1" required>
+              </div>
+              <div class="mb-3">
+                <label for="ticket-type" class="form-label">Type de billet</label>
+                <select class="form-control" id="ticket-type" required>
+                  <option value="standard">Standard</option>
+                  <option value="vip">VIP</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="ticket-price" class="form-label">Prix total</label>
+                <input type="number" class="form-control" id="ticket-price" readonly>
+              </div>
+              <div class="mb-3">
+                <label for="payment-type" class="form-label">Type de paiement</label>
+                <select class="form-control" id="payment-type" required>
+                  <option value="complet">Paiement complet</option>
+                  <option value="acompte">Acompte</option>
+                </select>
+              </div>
+              <div class="mb-3" id="acompte-input-group" style="display: none;">
+                <label for="acompte-amount" class="form-label">Montant de l'acompte</label>
+                <input type="number" class="form-control" id="acompte-amount" min="1" placeholder="Entrez le montant de l'acompte">
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Valider la Réservation</button>
+            </form>
+            <div id="qrcode-container" class="mt-3 text-center" style="display: none;">
+              <div id="qrcode-modal" class="mx-auto"></div>
+              <button class="btn btn-secondary mt-2" id="download-qr-modal">Télécharger QR Code</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal pour compléter un paiement -->
+    <div class="modal fade" id="completePaymentModal" tabindex="-1" aria-labelledby="completePaymentModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="completePaymentModalLabel">Compléter le Paiement</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="complete-payment-form">
+              <input type="hidden" id="complete-payment-reservation-id">
+              <div class="mb-3">
+                <label for="remaining-amount" class="form-label">Montant restant à payer</label>
+                <input type="number" class="form-control" id="remaining-amount" readonly>
+              </div>
+              <div class="mb-3">
+                <label for="payment-amount" class="form-label">Montant à payer maintenant</label>
+                <input type="number" class="form-control" id="payment-amount" required min="1">
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Compléter le Paiement</button>
+            </form>
+            <div id="qrcode-complete-container" class="mt-3 text-center" style="display: none;">
+              <div id="qrcode-complete" class="mx-auto"></div>
+              <button class="btn btn-secondary mt-2" id="download-qr-complete">Télécharger QR Code</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal pour modifier un utilisateur -->
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editUserModalLabel">Modifier un Utilisateur</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="edit-user-form">
+              <input type="hidden" id="edit-user-id">
+              <div class="mb-3">
+                <label for="edit-user-email" class="form-label">E-mail</label>
+                <input type="email" class="form-control" id="edit-user-email" required>
+              </div>
+              <div class="mb-3">
+                <label for="edit-user-role" class="form-label">Rôle</label>
+                <select class="form-control" id="edit-user-role" required>
+                  <option value="user">Utilisateur</option>
+                  <option value="organizer">Organisateur</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Enregistrer</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
+  <script>
+    console.log('QRCode loaded:', typeof QRCode);
+    if (typeof QRCode !== 'function') {
+      console.warn('QRCode library failed to load from primary CDN. Trying fallback...');
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+      script.onload = () => console.log('QRCode loaded from fallback:', typeof QRCode);
+      script.onerror = () => console.error('Failed to load QRCode from fallback CDN');
+      document.head.appendChild(script);
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <script type="module">
+    import { getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { db } from './js/firebase.js';
+    import { doc, getDoc, setDoc, collection, getDocs, addDoc, query, where, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import { loadEvents, filterEvents, reserveEvent } from './js/events.js';
+    import { loadReservations, loadOrganizerReservations, validateReservation, scanQRCode, completePayment } from './js/reservations.js';
+    import { loadUsers, createEvent, createOrganizerEvent, createUser, updateUser, deleteUser } from './js/auth.js';
+    import { initCategories, loadCategories } from './js/initCategories.js';
+    import { initFirestore } from './js/initFirestore.js';
+
+    async function waitForQRCode() {
+      if (typeof QRCode === 'function') return QRCode;
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          if (typeof QRCode === 'function') {
+            clearInterval(interval);
+            resolve(QRCode);
+          }
+        }, 100);
+        setTimeout(() => {
+          clearInterval(interval);
+          reject(new Error('QRCode library failed to load after timeout'));
+        }, 5000);
+      });
+    }
+
+    try {
+      const auth = getAuth();
+      const showError = (message) => {
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = message;
+        errorDiv.classList.remove('d-none');
+        setTimeout(() => errorDiv.classList.add('d-none'), 5000);
+      };
+
+      const showInfo = (message) => {
+        const infoDiv = document.getElementById('info-message');
+        infoDiv.textContent = message;
+        infoDiv.classList.remove('d-none');
+        setTimeout(() => infoDiv.classList.add('d-none'), 5000);
+      };
+
+      setPersistence(auth, browserLocalPersistence)
+        .then(() => {
+          console.log('Persistence set to browserLocalPersistence');
+          onAuthStateChanged(auth, async (user) => {
+            console.log('onAuthStateChanged triggered, user:', user);
+            if (user) {
+              try {
+                console.log('Fetching user role for UID:', user.uid);
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                let role = 'user';
+                if (!userDoc.exists()) {
+                  await setDoc(doc(db, 'users', user.uid), {
+                    email: user.email || 'unknown@example.com',
+                    role: 'user',
+                    createdAt: new Date().toISOString()
+                  });
+                  console.log('Created user document for UID:', user.uid);
+                } else {
+                  role = userDoc.data().role || 'user';
+                }
+                console.log('User role:', role);
+                document.querySelectorAll('.section').forEach(section => section.style.display = 'none');
+                const section = document.getElementById(`${role}-section`);
+                if (section) {
+                  section.style.display = 'block';
+                  console.log(`Showing ${role}-section`);
+                } else {
+                  showError('Section introuvable pour le rôle: ' + role);
+                }
+
+                if (role === 'user') {
+                  console.log('Loading events and reservations for user');
+                  try {
+                    console.log('Fetching events...');
+                    const eventsSnapshot = await getDocs(collection(db, 'events'));
+                    if (eventsSnapshot.empty) {
+                      showInfo('Aucun événement disponible. Veuillez attendre que l\'admin ajoute des événements.');
+                    } else {
+                      console.log('Events found:', eventsSnapshot.size);
+                      loadEvents();
+                    }
+                  } catch (error) {
+                    console.error('Error fetching events:', error);
+                    showError('Erreur lors du chargement des événements: ' + error.message);
+                  }
+                  try {
+                    console.log('Fetching reservations for userId:', user.uid);
+                    const reservationsQuery = query(collection(db, 'reservations'), where('userId', '==', user.uid));
+                    const reservationsSnapshot = await getDocs(reservationsQuery);
+                    if (reservationsSnapshot.empty) {
+                      showInfo('Aucune réservation trouvée. Réservez un événement pour voir vos réservations.');
+                    } else {
+                      console.log('Reservations found:', reservationsSnapshot.size);
+                      loadReservations(user.uid);
+                    }
+                  } catch (error) {
+                    console.error('Error fetching reservations:', error);
+                    showError('Erreur lors du chargement des réservations: ' + error.message);
+                  }
+                  document.getElementById('filter-btn').addEventListener('click', filterEvents);
+
+                  async function updateTicketPrice() {
+                    const ticketType = document.getElementById('ticket-type').value;
+                    const numberOfSeats = parseInt(document.getElementById('number-of-seats').value) || 1;
+                    const reservationEventId = document.getElementById('reservation-event-id').value;
+                    const reserveBtn = document.querySelector(`.reserve-btn[data-event-id="${reservationEventId}"]`);
+                    const standardPrice = parseFloat(reserveBtn.dataset.price);
+                    const vipPrice = parseFloat(reserveBtn.dataset.vipPrice);
+                    const pricePerTicket = ticketType === 'standard' ? standardPrice : standardPrice + vipPrice;
+                    document.getElementById('ticket-price').value = (pricePerTicket * numberOfSeats).toFixed(2);
+                  }
+
+                  document.getElementById('ticket-type').addEventListener('change', updateTicketPrice);
+                  document.getElementById('number-of-seats').addEventListener('change', updateTicketPrice);
+                  document.getElementById('payment-type').addEventListener('change', (e) => {
+                    document.getElementById('acompte-input-group').style.display = e.target.value === 'acompte' ? 'block' : 'none';
+                  });
+
+                  document.getElementById('reservation-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const eventId = document.getElementById('reservation-event-id').value;
+                    const ticketType = document.getElementById('ticket-type').value;
+                    const numberOfSeats = parseInt(document.getElementById('number-of-seats').value);
+                    const paymentType = document.getElementById('payment-type').value;
+                    const price = parseFloat(document.getElementById('ticket-price').value);
+                    const acompteAmount = paymentType === 'acompte' ? parseFloat(document.getElementById('acompte-amount').value) : price;
+                    try {
+                      if (numberOfSeats <= 0) {
+                        throw new Error('Le nombre de places doit être supérieur à 0.');
+                      }
+                      if (paymentType === 'acompte' && (!acompteAmount || acompteAmount <= 0 || acompteAmount > price)) {
+                        throw new Error('Montant de l\'acompte invalide.');
+                      }
+                      const reservationId = await reserveEvent(user.uid, eventId, ticketType, price, paymentType, acompteAmount, numberOfSeats);
+                      if (paymentType === 'complet' || acompteAmount >= price) {
+                        document.getElementById('qrcode-container').innerHTML = '<div id="qrcode-modal"></div>';
+                        try {
+                          const QRCodeLib = await waitForQRCode();
+                          new QRCodeLib(document.getElementById('qrcode-modal'), {
+                            text: reservationId,
+                            width: 128,
+                            height: 128
+                          });
+                          document.getElementById('qrcode-container').style.display = 'block';
+                          document.getElementById('download-qr-modal').onclick = () => {
+                            const qrCanvas = document.querySelector('#qrcode-modal canvas');
+                            if (qrCanvas) {
+                              const link = document.createElement('a');
+                              link.href = qrCanvas.toDataURL('image/png');
+                              link.download = `qrcode-reservation-${reservationId}.png`;
+                              link.click();
+                            } else {
+                              showError('Erreur: Code QR non généré.');
+                            }
+                          };
+                          showInfo('Réservation effectuée avec succès ! Voici votre code QR.');
+                        } catch (qrError) {
+                          showError('Erreur lors de la génération du code QR: ' + qrError.message);
+                        }
+                      } else {
+                        showInfo('Réservation effectuée avec acompte. Complétez le paiement pour obtenir votre QR code.');
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('reservationModal'));
+                        modal.hide();
+                        loadReservations(user.uid);
+                      }
+                    } catch (error) {
+                      showError(error.message === 'Réservation expirée' ? 'Réservation expirée : l\'événement est passé.' : 'Erreur lors de la réservation: ' + error.message);
+                    }
+                  });
+
+                  document.getElementById('complete-payment-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const reservationId = document.getElementById('complete-payment-reservation-id').value;
+                    const paymentAmount = parseFloat(document.getElementById('payment-amount').value);
+                    try {
+                      const reservationDoc = await getDoc(doc(db, 'reservations', reservationId));
+                      const reservation = reservationDoc.data();
+                      const newPaidAmount = (reservation.paidAmount || 0) + paymentAmount;
+                      const isComplete = newPaidAmount >= reservation.price;
+                      await updateDoc(doc(db, 'reservations', reservationId), {
+                        paidAmount: newPaidAmount,
+                        paymentType: isComplete ? 'complet' : 'acompte'
+                      });
+                      if (isComplete) {
+                        document.getElementById('qrcode-complete-container').innerHTML = '<div id="qrcode-complete"></div>';
+                        try {
+                          const QRCodeLib = await waitForQRCode();
+                          new QRCodeLib(document.getElementById('qrcode-complete'), {
+                            text: reservationId,
+                            width: 128,
+                            height: 128
+                          });
+                          document.getElementById('qrcode-complete-container').style.display = 'block';
+                          document.getElementById('download-qr-complete').onclick = () => {
+                            const qrCanvas = document.querySelector('#qrcode-complete canvas');
+                            if (qrCanvas) {
+                              const link = document.createElement('a');
+                              link.href = qrCanvas.toDataURL('image/png');
+                              link.download = `qrcode-reservation-${reservationId}.png`;
+                              link.click();
+                            } else {
+                              showError('Erreur: Code QR non généré.');
+                            }
+                          };
+                          showInfo('Paiement complété avec succès ! Voici votre code QR.');
+                        } catch (qrError) {
+                          showError('Erreur lors de la génération du code QR: ' + qrError.message);
+                        }
+                      } else {
+                        showInfo('Paiement partiel ajouté. Continuez à compléter le paiement.');
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('completePaymentModal'));
+                        modal.hide();
+                      }
+                      loadReservations(user.uid);
+                    } catch (error) {
+                      showError('Erreur lors du complément de paiement: ' + error.message);
+                    }
+                  });
+                } else if (role === 'organizer') {
+                  console.log('Loading organizer reservations');
+                  const reservationsSnapshot = await getDocs(collection(db, 'reservations'));
+                  if (reservationsSnapshot.empty) {
+                    showInfo('Aucune réservation à valider pour le moment.');
+                  } else {
+                    loadOrganizerReservations();
+                  }
+                  loadCategories('#org-event-category');
+                  document.getElementById('organizer-event-form').addEventListener('submit', createOrganizerEvent);
+                  document.getElementById('start-scan').addEventListener('click', () => scanQRCode());
+                } else if (role === 'admin') {
+                  console.log('Loading users and categories for admin');
+                  const usersSnapshot = await getDocs(collection(db, 'users'));
+                  if (usersSnapshot.empty) {
+                    showInfo('Aucun utilisateur enregistré. Les utilisateurs apparaîtront après leur inscription.');
+                  } else {
+                    loadUsers();
+                  }
+                  const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+                  if (categoriesSnapshot.empty) {
+                    showInfo('Aucune catégorie disponible. Cliquez sur "Initialiser les Catégories".');
+                  } else {
+                    loadCategories();
+                  }
+                  document.getElementById('event-form').addEventListener('submit', createEvent);
+                  document.getElementById('create-user-form').addEventListener('submit', createUser);
+                  document.getElementById('edit-user-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const userId = document.getElementById('edit-user-id').value;
+                    const email = document.getElementById('edit-user-email').value;
+                    const role = document.getElementById('edit-user-role').value;
+                    try {
+                      await updateUser(userId, email, role);
+                      showInfo('Utilisateur mis à jour avec succès');
+                      const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+                      modal.hide();
+                      loadUsers();
+                    } catch (error) {
+                      showError('Erreur lors de la mise à jour de l\'utilisateur: ' + error.message);
+                    }
+                  });
+                  document.getElementById('init-categories').addEventListener('click', async () => {
+                    try {
+                      await initCategories();
+                      showInfo('Catégories initialisées');
+                      loadCategories();
+                    } catch (error) {
+                      showError('Erreur lors de l\'initialisation des catégories: ' + error.message);
+                    }
+                  });
+                  document.getElementById('init-firestore').addEventListener('click', async () => {
+                    try {
+                      await initFirestore(user.uid);
+                      showInfo('Firestore initialisé avec toutes les collections');
+                      loadCategories();
+                      loadUsers();
+                    } catch (error) {
+                      showError('Erreur lors de l\'initialisation de Firestore: ' + error.message);
+                    }
+                  });
+                }
+              } catch (error) {
+                showError('Erreur lors de la récupération des données utilisateur: ' + error.message);
+                console.error('Error in onAuthStateChanged:', error);
+              }
+            } else {
+              console.log('No user logged in, redirecting to login.html');
+              window.location.href = '/login.html';
+            }
+          });
+        })
+        .catch(error => {
+          showError('Erreur lors de la configuration de la persistance: ' + error.message);
+          console.error('Persistence error:', error);
+        });
+
+      document.getElementById('logout').addEventListener('click', () => {
+        console.log('Logout clicked');
+        signOut(auth).then(() => {
+          console.log('User signed out, redirecting to login.html');
+          window.location.href = '/login.html';
+        }).catch(error => {
+          showError('Erreur lors de la déconnexion: ' + error.message);
+          console.error('Logout error:', error);
+        });
+      });
+    } catch (error) {
+      const errorDiv = document.getElementById('error-message');
+      errorDiv.textContent = 'Erreur d\'initialisation Firebase: ' + error.message;
+      errorDiv.classList.remove('d-none');
+      console.error('Firebase initialization error:', error);
+    }
+  </script>
+</body>
+</html>
